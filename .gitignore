@@ -1,1 +1,3 @@
 .venv
+server/security.py
+front/security.js

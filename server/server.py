@@ -1,19 +1,17 @@
 import asyncio
 
 import websockets
+from security import *
 
-TARGET_WS_SERVER = "ws://localhost:8765"
-
-
-# Список всех подключённых WebSocket-клиентов для порта 8766
+# Список всех подключённых WebSocket-клиентов
 connected_clients = set()
 
-# Обработчик для подключения платы MicroPython (на порту 8765)
+# Обработчик для подключения платы MicroPython
 async def handle_micropython(websocket, path):
     async for message in websocket:
         print(f"Received message from MicroPython: {message}")
         
-        # Отправляем сообщение всем подключённым клиентам на порте 8766
+        # Отправляем сообщение всем подключённым клиентам
         for client in connected_clients:
             try:
                 if client != websocket:
@@ -21,7 +19,7 @@ async def handle_micropython(websocket, path):
             except Exception as e:
                 print(f"Error sending message to client: {e}")
 
-# Обработчик для подключения фронтенда (на порту 8766)
+# Обработчик для подключения фронтенда
 async def handle_frontend(websocket, path):
     # Добавляем нового клиента в список подключённых
     connected_clients.add(websocket)
@@ -36,13 +34,11 @@ async def handle_frontend(websocket, path):
 
 
 async def main():
-    # Запуск сервера для платы MicroPython на порту 8765
-    server_micropython = await websockets.serve(handle_micropython, "localhost", 8765)
-    print("MicroPython server is running on ws://localhost:8765")
+    server_micropython = await websockets.serve(handle_micropython, MICROPYTHON_HOST, MICROPYTHON_PORT)
+    print("MicroPython server is running")
 
-    # Запуск сервера для фронтенда на порту 8766
-    server_frontend = await websockets.serve(handle_frontend, "localhost", 8766)
-    print("Frontend server is running on ws://localhost:8766")
+    server_frontend = await websockets.serve(handle_frontend, FRONTEND_HOST, FRONTEND_PORT)
+    print("Frontend server is running")
 
     try:
         # Бесконечное ожидание

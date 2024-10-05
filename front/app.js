@@ -1,4 +1,6 @@
-const socket = new WebSocket('ws://localhost:8766');
+import { CONNECTION_DATA } from './security.js';
+
+const socket = new WebSocket(CONNECTION_DATA);
 
 socket.onmessage = function (event) {
 	console.log('Data from sensor:', event.data);
