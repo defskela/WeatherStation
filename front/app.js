@@ -1,6 +1,4 @@
-// URL WebSocket сервера (замени на свой)
-// const socketUrl = 'ws://localhost:8080'; // Пример URL
-const socket = new WebSocket('ws://localhost:8765');
+const socket = new WebSocket('ws://localhost:8766');
 
 socket.onmessage = function (event) {
 	console.log('Data from sensor:', event.data);
