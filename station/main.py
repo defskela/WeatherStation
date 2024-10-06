@@ -1,18 +1,16 @@
+import math
+import time
+from time import sleep
+
+import BME280
+import mhz19
+import ujson
+#import adafruit_sgp30
+import uSGP30
+from machine import I2C, SPI, Pin
 from ST7735_80x160 import TFT
 #import ssd1306
 from sysfont import sysfont
-
-import BME280
-
-#import adafruit_sgp30
-import uSGP30
-
-import mhz19
-
-import time
-from time import sleep
-import math
-from machine import SPI,Pin, I2C
 
 # ESP32 - Pin assignment I2C
 i2c = I2C(1, scl=Pin(39), sda=Pin(40), freq=400000)
@@ -51,7 +49,6 @@ mhz.set_detection_range(5000) # detection range 0-5000PPM
 mhz.read_co2_continuous(10000) # read co2 continuously every 10 secs
 co2 = mhz.read_co2() # read co2 once
 
-
 while True:
   
   mhz.update()
@@ -76,7 +73,7 @@ while True:
     co2eq_str = str(co2eq)
     tvoc_str = str(tvoc)
  
-    tft.fill(TFT.BLACK);
+    tft.fill(TFT.BLACK)
     v = 0
     tft.text((0, v), 'Temp C: ' + tempC_str, TFT.WHITE, sysfont, 1, nowrap=True)
     v += sysfont["Height"] + 4
