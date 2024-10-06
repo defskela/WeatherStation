@@ -1,6 +1,6 @@
 import uwebsockets.client as websocket_client
 
-from station.security import HOST
+from security import HOST
 
 # Подключаемся к WebSocket серверу
 websocket = websocket_client.connect(HOST)

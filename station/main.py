@@ -7,10 +7,16 @@ import mhz19
 import ujson
 #import adafruit_sgp30
 import uSGP30
+import uwebsockets.client as websocket_client
 from machine import I2C, SPI, Pin
 from ST7735_80x160 import TFT
 #import ssd1306
 from sysfont import sysfont
+
+from security import HOST
+
+# Подключаемся к WebSocket серверу
+websocket = websocket_client.connect(HOST)
 
 # ESP32 - Pin assignment I2C
 i2c = I2C(1, scl=Pin(39), sda=Pin(40), freq=400000)
@@ -49,6 +55,15 @@ mhz.set_detection_range(5000) # detection range 0-5000PPM
 mhz.read_co2_continuous(10000) # read co2 continuously every 10 secs
 co2 = mhz.read_co2() # read co2 once
 
+send_data = {
+    "temperature": 0,
+    "humidity": 0,
+    "pressure": 0,
+    "co2": 0,
+    "co2eq": 0,
+    "tvoc": 0
+}
+
 while True:
   
   mhz.update()
@@ -59,6 +74,17 @@ while True:
     presC = int(bme.pressureD)
     co2eq, tvoc = sgp30.measure_iaq()
     co2 = mhz.get_co2()
+
+    send_data["temperature"] = tempC
+    send_data["humidity"] = humC
+    send_data["pressure"] = presC
+    send_data["co2"] = co2
+    send_data["co2eq"] = co2eq
+    send_data["tvoc"] = tvoc
+
+    ws_data = ujson.dumps(send_data)
+    websocket.send(ws_data)
+    print("ws data:", ws_data)
     print('Temperature °C: ', tempC)
     print('Humidity %: ', humC)
     print('Pressure mmHg: ', presC)

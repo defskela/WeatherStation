@@ -1,11 +1,9 @@
 # boot.py -- run on boot-up
 import network
 from machine import Pin
-from station.security import SSID, PASSWORD
 
-# Replace the following with your WIFI Credentials
-SSID = SSID
-SSI_PASSWORD = PASSWORD
+led = Pin(12, Pin.OUT)
+led_work = Pin(13, Pin.OUT)
 
 def do_connect():
     import network
@@ -17,7 +15,7 @@ def do_connect():
         while not sta_if.isconnected():
             pass
     # sta_if.ifconfig(('192.168.1.150', '255.255.255.0', '192.168.1.1', '192.168.1.1'))
-    sta_if.ifconfig((need address))
+    sta_if.ifconfig(('192.168.0.150', '255.255.255.0', '192.168.0.1', '255.255.255.0'))
     print('network config:', sta_if.ifconfig())
     led.on()
 do_connect()
