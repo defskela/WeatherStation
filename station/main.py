@@ -124,7 +124,6 @@ async def websocket_connection():
                     print("Received pong:", pong)
                     if pong is None:
                         raise Exception("No pong received!")
-                    print("Received pong:", pong)
                 except Exception as e:
                     print("Ping error or no pong:", e)
                     raise  # Закрываем соединение и переподключаемся
