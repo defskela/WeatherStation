@@ -8,16 +8,22 @@ connected_clients = set()
 
 # Обработчик для подключения платы MicroPython
 async def handle_micropython(websocket, path):
-    async for message in websocket:
-        print(f"Received message from MicroPython: {message}")
-        
-        # Отправляем сообщение всем подключённым клиентам
-        for client in connected_clients:
-            try:
-                if client != websocket:
-                    await client.send(message)
-            except Exception as e:
-                print(f"Error sending message to client: {e}")
+    try:
+        async for message in websocket:
+            if message == "ping":
+                await websocket.send("pong")
+            else:
+                print(f"Received message from MicroPython: {message}")
+                
+                # Отправляем сообщение всем подключённым клиентам
+                for client in connected_clients:
+                    try:
+                        if client != websocket:
+                            await client.send(message)
+                    except Exception as e:
+                        print(f"Error sending message to client: {e}")
+    except websockets.ConnectionClosedError as e:
+        print(f"Connection closed: {e}")
 
 # Обработчик для подключения фронтенда
 async def handle_frontend(websocket, path):
@@ -34,7 +40,7 @@ async def handle_frontend(websocket, path):
 
 
 async def main():
-    server_micropython = await websockets.serve(handle_micropython, MICROPYTHON_HOST, MICROPYTHON_PORT)
+    server_micropython = await websockets.serve(handle_micropython, MICROPYTHON_HOST, MICROPYTHON_PORT, ping_interval=30, ping_timeout=15)
     print("MicroPython server is running")
 
     server_frontend = await websockets.serve(handle_frontend, FRONTEND_HOST, FRONTEND_PORT)

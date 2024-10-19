@@ -1,7 +1,7 @@
 import math
 import time
 from time import sleep
-
+import uasyncio as asyncio
 import BME280
 import mhz19
 import ujson
@@ -64,53 +64,94 @@ send_data = {
     "tvoc": 0
 }
 
-while True:
+
+
+# Подключение к WebSocket серверу
+async def websocket_connection():
+    while True:
+        try:
+            print("Connecting to server...")
+            websocket = websocket_client.connect(HOST)
+            print("Connected!")
+
+            while True:
+                mhz.update()
   
-  mhz.update()
-  
-  if (mhz.measure_co2 == 1): # wait read_co2_continuous
+                if (mhz.measure_co2 == 1):
+                    # Обработка сенсорных данных
+                    send_data = get_sensor_data()
+
+                    # Отправка данных на сервер
+                    ws_data = ujson.dumps(send_data)
+                    websocket.send(ws_data)
+                    print("ws data:", ws_data)
+                    print('Temperature °C: ', send_data["temperature"])
+                    print('Humidity %: ', send_data["humidity"])
+                    print('Pressure mmHg: ', send_data["pressure"])
+                    print("CO2 ppm", send_data["co2"])
+                    print("CO2eq ppm", send_data["co2eq"])
+                    print("TVOC ppb", send_data["tvoc"])
+                    print(' ')
+                    tempC_str = str(send_data["temperature"])
+                    humC_str = str(send_data["humidity"])
+                    presC_str = str(send_data["pressure"])
+                    co2_str = str(send_data["co2"])
+                    co2eq_str = str(send_data["co2eq"])
+                    tvoc_str = str(send_data["tvoc"])
+     
+                    tft.fill(TFT.BLACK)
+                    v = 0
+                    tft.text((0, v), 'Temp C: ' + tempC_str, TFT.WHITE, sysfont, 1, nowrap=True)
+                    v += sysfont["Height"] + 4
+                    tft.text((0, v), 'Hum %: ' + humC_str, TFT.WHITE, sysfont, 1, nowrap=True)
+                    v += sysfont["Height"] + 4
+                    tft.text((0, v), 'Pres mmHg: ' + presC_str, TFT.WHITE, sysfont, 1, nowrap=True)
+                    v += sysfont["Height"] + 4
+                    tft.text((0, v), 'CO2: ' + co2_str + 'ppm', TFT.GREEN, sysfont, 1, nowrap=True)
+                    v += sysfont["Height"] + 4
+                    tft.text((0, v), 'CO2eq ppm: ' + co2eq_str, TFT.WHITE, sysfont, 1, nowrap=True)
+                    v += sysfont["Height"] + 4
+                    tft.text((0, v), 'TVOC ppb: ' + tvoc_str, TFT.WHITE, sysfont, 1, nowrap=True)
+
+                    mhz.measure_co2 = 0 # wait set measure_co2
+
+                # Отправляем ping-запрос для поддержания соединения
+                try:
+                    websocket.send("ping")  # Отправляем пинг
+                    pong = websocket.recv()  # Ожидаем ответ от сервера
+                    if pong != "pong":
+                        raise Exception("No pong received!")
+                    print("Received pong:", pong)
+                    if pong is None:
+                        raise Exception("No pong received!")
+                    print("Received pong:", pong)
+                except Exception as e:
+                    print("Ping error or no pong:", e)
+                    raise  # Закрываем соединение и переподключаемся
+
+                # Ожидание перед следующей отправкой данных
+                await asyncio.sleep(5)
+
+        except Exception as e:
+            print("Connection error:", e)
+            await asyncio.sleep(5)  # Ждем и пробуем снова подключиться
+
+def get_sensor_data():
     tempC = int(bme.temperatureD)
     humC = int(bme.humidityD)
     presC = int(bme.pressureD)
     co2eq, tvoc = sgp30.measure_iaq()
     co2 = mhz.get_co2()
 
-    send_data["temperature"] = tempC
-    send_data["humidity"] = humC
-    send_data["pressure"] = presC
-    send_data["co2"] = co2
-    send_data["co2eq"] = co2eq
-    send_data["tvoc"] = tvoc
+    send_data = {
+        "temperature": tempC,
+        "humidity": humC,
+        "pressure": presC,
+        "co2": co2,
+        "co2eq": co2eq,
+        "tvoc": tvoc
+    }
+    return send_data
 
-    ws_data = ujson.dumps(send_data)
-    websocket.send(ws_data)
-    print("ws data:", ws_data)
-    print('Temperature °C: ', tempC)
-    print('Humidity %: ', humC)
-    print('Pressure mmHg: ', presC)
-    print("CO2 ppm", co2)
-    print("CO2eq ppm", co2eq)
-    print("TVOC ppb", tvoc)
-    print(' ')
-    tempC_str = str(tempC)
-    humC_str = str(humC)
-    presC_str = str(presC)
-    co2_str = str(co2)
-    co2eq_str = str(co2eq)
-    tvoc_str = str(tvoc)
- 
-    tft.fill(TFT.BLACK)
-    v = 0
-    tft.text((0, v), 'Temp C: ' + tempC_str, TFT.WHITE, sysfont, 1, nowrap=True)
-    v += sysfont["Height"] + 4
-    tft.text((0, v), 'Hum %: ' + humC_str, TFT.WHITE, sysfont, 1, nowrap=True)
-    v += sysfont["Height"] + 4
-    tft.text((0, v), 'Pres mmHg: ' + presC_str, TFT.WHITE, sysfont, 1, nowrap=True)
-    v += sysfont["Height"] + 4
-    tft.text((0, v), 'CO2: ' + co2_str + 'ppm', TFT.GREEN, sysfont, 1, nowrap=True)
-    v += sysfont["Height"] + 4
-    tft.text((0, v), 'CO2eq ppm: ' + co2eq_str, TFT.WHITE, sysfont, 1, nowrap=True)
-    v += sysfont["Height"] + 4
-    tft.text((0, v), 'TVOC ppb: ' + tvoc_str, TFT.WHITE, sysfont, 1, nowrap=True)
 
-    mhz.measure_co2 = 0 # wait set measure_co2
+asyncio.run(websocket_connection())
