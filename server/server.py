@@ -1,5 +1,6 @@
 import asyncio
 import signal
+import sqlite3
 
 import websockets
 from security import *
@@ -16,6 +17,7 @@ async def handle_micropython(websocket, path):
                 await websocket.send("pong")
             else:
                 print(f"Received message from MicroPython: {message}")
+                insert_data(eval(message))
 
                 # Отправляем сообщение всем подключённым клиентам
                 for client in list(connected_clients):  # Создаём копию списка
@@ -29,12 +31,26 @@ async def handle_micropython(websocket, path):
                         print(f"Error sending message to client: {e}")
                         connected_clients.remove(client)
     except Exception as e:
-        print(f"Error in MicroPython connection: {e}")
+        print(f"Error {e}")
     finally:
         # Гарантированно удаляем WebSocket из списка, если он ещё там
         if websocket in connected_clients:
             connected_clients.remove(websocket)
         await websocket.close()
+
+
+def insert_data(data):
+    with sqlite3.connect('sensors_data.db') as conn:
+        cursor = conn.cursor()
+
+        cursor.execute(
+            '''
+        INSERT INTO sensor_data (pressure, co2eq, humidity, co2, tvoc, temperature)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ''', (data["pressure"], data["co2eq"], data["humidity"], data["co2"],
+              data["tvoc"], data["temperature"]))
+
+        conn.commit()
 
 
 async def handle_frontend(websocket, path):

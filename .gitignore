@@ -2,3 +2,4 @@
 server/security.py
 front/security.js
 station/security.py
+sensors_data.db
